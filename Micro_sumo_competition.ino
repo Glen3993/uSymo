@@ -14,7 +14,8 @@ const int BUTON1 = 14;
 const int BUTON2 = 9;
 const int Led1 = 10;
 const int Led2 = 11;
-
+int dir2 = 1;
+int flag = 1;
 
 
 const int Led3 = 12;
@@ -27,12 +28,16 @@ const byte command_prog = 0xB;
 const byte StartStop_command = 0x7;
 const int ADDRESSEEPROM = 5;
 
+void drive(int L, int R);
 
-const int deltaT1 = 500;
+const int deltaT1 =
+  800;
 unsigned long endT1 = 0;
 
 
-
+const int deltaT2 =
+  1;
+unsigned long endT2 = 0;
 
 
 
@@ -63,6 +68,14 @@ void readsensors() {
   digitalWrite(Led3, s3);
   Snsr = s1 * 4 + s2 * 2 + s3 * 1;
 }
+
+void once(){
+  if(flag==1){
+
+  }
+}
+
+
 //езда по прямой
 void test() {
 
@@ -75,11 +88,6 @@ void Blink() {
   delay(500);
   digitalWrite(Led1, 0);
 }
-
-
-
-
-
 
 //работа с судейским пультом
 int IR_Remote() {
@@ -112,27 +120,54 @@ int IR_Remote() {
   return cmdRet;
 }
 
-
-
+//поиск противника
 void milllis() {
   readsensors();
+
   if (millis() >= endT1) {
     dir = dir * (-1);
 
-    endT1 = millis() + deltaT1;
+    
+
+    if(flag==1){
+       endT1 = millis() + deltaT1/2;
+       flag=0;  
+          }
+          else  {endT1 = millis() + deltaT1;}
   }
 
 
-
+//
+//drive(-40,40);
+//delay(40);
+//drive(0,0);
   drive(dir * 40, -dir * 40);
   if (Snsr > 0) { return; }
 }
 
+//выезд 
+void millis_run(int period) {
+
+  digitalWrite(Led2, 1);
+  endT2 = millis() + period;
+  drive(100, 100);
+
+  while (millis() < endT2) {
+    readsensors();
+
+    if (Snsr > 0) {
+      drive(0, 0);
+      return;
+    }
+
+  }  //while
 
 
 
+  drive(0, 0);
 
-
+  return;
+}
 
 //работа с судейским пультом №2
 bool chekIReceive() {
@@ -173,81 +208,13 @@ bool chekIReceive() {
   return result;
 }
 
-
-
-
-
-
-//начало боя
-void BoiStart() {
-
-  readsensors();
-  drive(-100, -100);
-  delay(250);
-  drive(0, 0);
-
-  drive(-100, 100);
-  delay(200);
-
-
-  drive(0, 0);
-
-
-
-  while (1) {
-    int cmdRet = IR_Remote();
-    if (cmdRet == cmdSTOP) {
-      drive(0, 0);
-      while (1)
-        ;
-    }
-
-
-
-
-
-
-    readsensors();
-
-    if (Snsr == 0) {
-      milllis();
-    } else if (Snsr == 3) {
-      drive(155, 120);
-    } else if (Snsr == 6) {
-      drive(120, 155);
-    }
-
-
-
-    else if (Snsr == 1) {
-      drive(165, 120);
-    } else if (Snsr == 4) {
-      drive(120, 165);
-    }
-
-
-    else if (Snsr == 2) {
-      drive(125, 125);
-    } else if (Snsr == 5) {
-      drive(160, 160);
-    } else if (Snsr == 7) {
-      drive(255, 255);
-    }
-    //readsensors();
-  }
-}
-
-
-
-
+//бой
 void BoiStart_run() {
+drive(120,120);
+delay(55);
+drive(0,0);
+  millis_run(250);
 
-  readsensors();
-  drive(150, 150);
-  delay(200);
-  drive(0, 0);
-  //drive(-100, 100);
-  //delay(264);
 
 
   drive(0, 0);
@@ -261,19 +228,22 @@ void BoiStart_run() {
     readsensors();
 
     if (Snsr == 0) {
-      drive(150, -150);
+      ///drive(40, -40);
+      ///delay(50);
+      //drive(0, 0);
+      milllis();
     } else if (Snsr == 3) {
-      drive(155, 110);
+      drive(155, 100);
     } else if (Snsr == 6) {
-      drive(110, 155);
+      drive(100, 155);
     }
 
 
 
     else if (Snsr == 1) {
-      drive(165, 105);
+      drive(165, 95);
     } else if (Snsr == 4) {
-      drive(105, 165);
+      drive(95, 165);
     }
 
 
@@ -288,11 +258,7 @@ void BoiStart_run() {
   }
 }
 
-
-
-
-
-
+//драйв езда
 void drive(int L, int R) {
   R = R * 1.4;
   R = constrain(R, -255, 255);
@@ -315,10 +281,9 @@ void drive(int L, int R) {
   }
 }
 
-
 void setup() {
-  //endT1 = millis() + deltaT1;
-  //endT2 = millis() + deltaT2;
+  //endT1 = millis() + deltaT1;/////
+  //endT2 = millis() + deltaT2;/////
 
   EEPROM.begin(256);
   pinMode(ML2, OUTPUT);
@@ -339,49 +304,18 @@ void setup() {
 }
 
 void loop() {
-  
+  //milllis();
   drive(0, 0);
   int cmdRet = IR_Remote();
   if (cmdRet == cmdSTART) {
-  
+
     BoiStart_run();
     Blink();
   }
-  if (!digitalRead(BUTON1)) {
-    state_options = state_options + 1;
-  }
-  if (state_options > 2) { state_options = 1; }
+  readsensors();
 
+  
+  
 
- // if (state_options == 1) {
- //   digitalWrite(Led1, 1);
- //   delay(250);
- //   digitalWrite(Led1, 0);
- //  c
- //   delay(100);
- // }
-//
- // else if (state_options == 2) {
- //   digitalWrite(Led2, 1);
- //   delay(250);
- //   digitalWrite(Led2, 0);
- //   int cmdRet = IR_Remote();
- //   if (cmdRet == cmdSTART) {
-//
- //     BoiStart_run();
- //     Blink();
- //   }
- //   delay(100);
- // }
-
-  //else if (state_options == 3) {
-  //  digitalWrite(Led3, 1);
-  //  delay(250);
-  //  digitalWrite(Led3, 0);
-  //  readsensors();
-  //}
-  //delay(100);
- //digitalWrite(Led3, 1);
- //delay(250);
-    
+  // millis_run(10000);
 }
