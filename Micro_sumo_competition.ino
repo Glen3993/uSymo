@@ -1,5 +1,7 @@
+#define MAXIMUM_NUM_NEOPIXELS 1
 #include <IRremote.hpp>
 #include <EEPROM.h>
+#include <NeoPixelConnect.h>
 //int and const
 int s1 = 0;
 int s2 = 0;
@@ -16,7 +18,18 @@ const int Led1 = 10;
 const int Led2 = 11;
 int dir2 = 1;
 int flag = 1;
+const int SMARTLED = 16;
+NeoPixelConnect p(SMARTLED, MAXIMUM_NUM_NEOPIXELS, pio0, 0);
 
+
+const uint32_t RED_ = 0x9F0000;
+const uint32_t GREEN_ = 0x009F00;
+const uint32_t BLUE_ = 0x00009F;
+const uint32_t WHITE_ = 0x888888;
+const uint32_t VIOLET_ = 0xFF00FF;
+const uint32_t YELLOW_ = 0x808000;
+const uint32_t BLACK_ = 0x1B1E23;
+const uint32_t NGN_ = 0x00ffb3;
 
 const int Led3 = 12;
 const int Led4 = 13;
@@ -69,11 +82,16 @@ void readsensors() {
   Snsr = s1 * 4 + s2 * 2 + s3 * 1;
 }
 
-void once(){
-  if(flag==1){
 
-  }
+
+void showLed(uint32_t color) {
+  byte red = color >> 16;
+  byte green = (color >> 8) & 0xFF;
+  byte blue = color & 0xFF;
+  p.neoPixelFill(red, green, blue, true);
 }
+
+
 
 
 //езда по прямой
@@ -84,9 +102,9 @@ void test() {
 
 //светодиод моргает один раз
 void Blink() {
-  digitalWrite(Led1, 1);
+  digitalWrite(Led4, 1);
   delay(500);
-  digitalWrite(Led1, 0);
+  digitalWrite(Led4, 0);
 }
 
 //работа с судейским пультом
@@ -96,9 +114,9 @@ int IR_Remote() {
     if (IrReceiver.decodedIRData.address == command_prog) {
       dohio = IrReceiver.decodedIRData.command;
       cmdRet = cmdPROGRAM;
-      digitalWrite(Led3, 1);
-      delay(500);
-      digitalWrite(Led3, 0);
+    showLed(BLUE_);
+ delay(500);
+ showLed(NGN_) ;
       EEPROM.write(ADDRESSEEPROM, dohio);
       EEPROM.commit();
       //saveEEPROM();
@@ -107,11 +125,13 @@ int IR_Remote() {
     if (IrReceiver.decodedIRData.address == StartStop_command) {
       if (IrReceiver.decodedIRData.command == dohio + 1) {
         cmdRet = cmdSTART;
+        showLed(GREEN_); 
       }
     }
     if (IrReceiver.decodedIRData.address == StartStop_command) {
       if (IrReceiver.decodedIRData.command == dohio) {
         cmdRet = cmdSTOP;
+        showLed(RED_); 
       }
     }
 
@@ -179,8 +199,8 @@ bool chekIReceive() {
 
       dohio = IrReceiver.decodedIRData.command;
       Serial.println("Programming");
-      Blink();
-
+     // Blink();
+ 
       result = true;
 
     } else if ((IrReceiver.decodedIRData.address) == 0x07) {
@@ -198,7 +218,7 @@ bool chekIReceive() {
         // ------------------------------------------------------command stop
         result = true;
         Serial.println("Stop");
-        // Blink();
+         Blink();
         //drive(0, 0);
       }
     }
@@ -211,9 +231,9 @@ bool chekIReceive() {
 //бой
 void BoiStart_run() {
 drive(120,120);
-delay(55);
+delay(85);
 drive(0,0);
-  millis_run(250);
+  millis_run(150);
 
 
 
@@ -233,17 +253,17 @@ drive(0,0);
       //drive(0, 0);
       milllis();
     } else if (Snsr == 3) {
-      drive(155, 100);
+      drive(155, 80);
     } else if (Snsr == 6) {
-      drive(100, 155);
+      drive(80, 155);
     }
 
 
 
     else if (Snsr == 1) {
-      drive(165, 95);
+      drive(165, 0);
     } else if (Snsr == 4) {
-      drive(95, 165);
+      drive(0, 165);
     }
 
 
@@ -284,7 +304,7 @@ void drive(int L, int R) {
 void setup() {
   //endT1 = millis() + deltaT1;/////
   //endT2 = millis() + deltaT2;/////
-
+showLed(VIOLET_);
   EEPROM.begin(256);
   pinMode(ML2, OUTPUT);
   pinMode(ML1, OUTPUT);
@@ -305,6 +325,7 @@ void setup() {
 
 void loop() {
   //milllis();
+
   drive(0, 0);
   int cmdRet = IR_Remote();
   if (cmdRet == cmdSTART) {
@@ -312,10 +333,10 @@ void loop() {
     BoiStart_run();
     Blink();
   }
-  readsensors();
+  //readsensors();
 
   
-  
+ 
 
   // millis_run(10000);
 }
